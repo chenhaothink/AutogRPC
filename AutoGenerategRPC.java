@@ -20,7 +20,36 @@ public class AutoGenerategRPC {
     }
 
     private static void generateFileJavaServer() {
-    
+        String methods="";
+        ArrayList<Method> mList=getMethods(FILENAME);
+        for(Method m:mList) {
+            String tempRequest="";
+            for (Para p : m.inList) {
+                tempRequest+="                System.out.println(req.get"+p.name+"());\n"; //对接java接口
+            }
+            String tempReply="";
+            for (Para p : m.outList) {
+                tempReply+=".set"+p.name+"(\"HELLO\")"; //对接java接口
+            }
+
+            methods +=
+            "            @Override\n" +
+            "            public void " + m.methodName + "(" + m.methodName + "Request req, StreamObserver<" + m.methodName + "Reply> responseObserver) {\n" +
+            tempRequest+
+            "                "+ m.methodName +"Reply reply = "+ m.methodName +"Reply.newBuilder()"+tempReply+".build();\n"+
+            "                responseObserver.onNext(reply);\n" +
+            "                responseObserver.onCompleted();\n" +
+            "            }\n" ;
+        }
+
+
+
+        String contents=
+        "        static class "+SERVICE+"Impl extends "+SERVICE+"Grpc."+SERVICE+"ImplBase {\n" +
+        methods+
+        "        }\n";
+
+        writeToFile(PACKAGE+".java",contents,false); //写入文件
     }
 
     private static void generateFileCPPClient() {
@@ -144,7 +173,7 @@ public class AutoGenerategRPC {
         }
         else  if(t==ParaType.JAVA)
         {
-
+            return Constant.TYPE_JAVA.get(type);
         }
         else
         {
@@ -168,6 +197,22 @@ public class AutoGenerategRPC {
             TYPE_PROTO.put("char*", "bytes");
             TYPE_PROTO.put("WORD*", "bytes");
             TYPE_PROTO.put("DWORD*", "bytes");
+        }
+
+        public static final Map<String, String> TYPE_JAVA = new HashMap<>();
+        static {
+            TYPE_JAVA.put("byte", "int"); //c++，JAVA
+            TYPE_JAVA.put("BYTE", "int");
+            TYPE_JAVA.put("WORD", "int");
+            TYPE_JAVA.put("short", "int");
+            TYPE_JAVA.put("int", "int");
+            TYPE_JAVA.put("DWORD", "int");
+            TYPE_JAVA.put("BYTE*", "byte[]");
+            TYPE_JAVA.put("BYTE[]", "byte[]");
+            TYPE_JAVA.put("byte[]", "byte[]");
+            TYPE_JAVA.put("char*", "byte[]");
+            TYPE_JAVA.put("WORD*", "byte[]");
+            TYPE_JAVA.put("DWORD*", "byte[]");
         }
     }
     public static void test()
